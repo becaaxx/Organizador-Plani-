@@ -23,6 +23,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Organizador de Tempo Dinâmico</title>
 
+  <!-- PWA: é isto que faz o Chrome/Edge oferecerem "Instalar app". Sem um
+       manifest.json válido (nome + ícones) e servido via HTTPS (o GitHub
+       Pages já serve assim), o navegador nunca mostra esse botão. -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#14161a" />
+  <link rel="icon" type="image/png" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
   <!--
     Tailwind via CDN (modo "Play CDN"): dá classes utilitárias prontas
     (p-4, flex, rounded-xl, etc) sem precisar instalar nada ou rodar um

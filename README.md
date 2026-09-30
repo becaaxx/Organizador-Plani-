@@ -74,11 +74,34 @@ arquivo. Este projeto já foi conferido e todos os imports batem
 exatamente com os nomes de arquivo (inclusive maiúsculas/minúsculas), mas
 vale lembrar disso se você criar novos arquivos no futuro.
 
+## Instalar como app (PWA)
+
+Depois do passo 4 acima, o site passa a ter um manifesto PWA
+(`manifest.json`) e um Service Worker (`service-worker.js`) — é isso que
+faz o Chrome/Edge oferecerem **"Instalar app"** (ícone perto da barra de
+endereço, ou menu ⋮ → "Instalar..."). Depois de instalado, o app abre numa
+janela própria (sem abas/barra do navegador) e continua funcionando mesmo
+sem internet, porque os arquivos ficam cacheados no dispositivo.
+
+Duas coisas importantes:
+
+- **O botão só aparece servido por HTTPS** (o GitHub Pages já serve assim
+  — não aparece rodando localmente via `file://`, e só aparece via
+  `http://localhost` se você usar um dos servidores locais do passo
+  "Como rodar" acima).
+- **Se você editar qualquer arquivo do app depois de instalado**, troque o
+  número em `CACHE_NAME` no topo de `service-worker.js` (ex: `"v1"` →
+  `"v2"`). Sem isso, quem já instalou continua vendo a versão antiga
+  cacheada — isso é comentado no próprio arquivo.
+
 ## Estrutura de pastas
 
 ```
 organizador-tempo/
 ├── index.html                    Estrutura da página (Tailwind via CDN)
+├── manifest.json                 Manifesto PWA (nome, ícones, cor do tema)
+├── service-worker.js             Cache offline + habilita "Instalar app"
+├── icons/                        Ícones do PWA (gerados a partir do logo do app)
 ├── css/
 │   └── style.css                 Variáveis de tema (dark/light) + linha do tempo
 └── js/

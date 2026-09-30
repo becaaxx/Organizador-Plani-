@@ -557,9 +557,23 @@ function processarResultadoAssistente(resultado) {
 }
 
 // ---------------------------------------------------------------------------
+// PWA — registra o Service Worker (ver service-worker.js) para o app poder
+// ser instalado e funcionar offline depois da primeira visita.
+// ---------------------------------------------------------------------------
+function iniciarServiceWorker() {
+  if (!("serviceWorker" in navigator)) return; // navegador antigo sem suporte
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch((erro) => {
+      console.warn("Não foi possível registrar o Service Worker:", erro);
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // INICIALIZAÇÃO
 // ---------------------------------------------------------------------------
 function iniciar() {
+  iniciarServiceWorker();
   iniciarTema();
   iniciarNavegacaoDeData();
   iniciarFiltros();
