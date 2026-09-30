@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<!--
+  index.html
+  ---------------------------------------------------------------------------
+  Este arquivo só define ESTRUTURA (o "esqueleto" da página). Quase nenhum
+  conteúdo dinâmico é escrito aqui à mão — os painéis do calendário, das
+  listas e dos cursos são preenchidos em tempo de execução pelo JavaScript
+  (veja js/ui/Renderizador.js), lendo os dados do AppController.
+
+  SOBRE O DARK MODE: este projeto NÃO usa a estratégia darkMode:"class" do
+  Tailwind (por isso a tag <html> abaixo não precisa de uma classe "dark").
+  Em vez disso, todas as cores do Tailwind (bg-base-bg, text-livre, etc.)
+  apontam para variáveis CSS definidas em css/style.css. O tema ESCURO é o
+  valor padrão dessas variáveis em :root — ou seja, dark mode por padrão
+  sem precisar de nenhuma classe. O botão de alternância no cabeçalho só
+  adiciona/remove a classe "light" (que faz o :root.light sobrescrever as
+  variáveis com tons claros) e lembra a escolha no localStorage. Ver
+  css/style.css e a função aplicarTema() em js/app.js.
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organizador de Tempo Dinâmico</title>
+
+  <!--
+    Tailwind via CDN (modo "Play CDN"): dá classes utilitárias prontas
+    (p-4, flex, rounded-xl, etc) sem precisar instalar nada ou rodar um
+    build. Ótimo para prototipar rápido; para produção de verdade,
+    o ideal seria instalar o Tailwind via npm e compilar um CSS final.
+  -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Em vez de fixar cores em hexadecimal, cada cor do Tailwind aponta
+    // para uma CSS custom property (variável CSS) definida em
+    // css/style.css. Assim, alternar entre tema escuro/claro é só trocar o
+    // VALOR das variáveis (feito com uma classe "light" na tag <html>) —
+    // as classes Tailwind (bg-base-bg, text-texto-principal, etc.)
+    // continuam as mesmas, sem precisar de um par "x dark:x" para cada
+    // elemento da página.
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ["'Space Grotesk'", "sans-serif"],
+            sans: ["'Inter'", "sans-serif"],
+            mono: ["'IBM Plex Mono'", "monospace"],
+          },
+          colors: {
+            base: {
+              bg: "var(--cor-fundo)",
+              surface: "var(--cor-superficie)",
+              surface2: "var(--cor-superficie-2)",
+              border: "var(--cor-borda)",
+            },
+            texto: {
+              principal: "var(--cor-texto)",
+              muted: "var(--cor-texto-muted)",
+            },
+            livre: "var(--cor-livre)",       // tempo disponível — cor "quente", de destaque
+            fixo: "var(--cor-fixo)",         // compromisso fixo — cor "fria", estável
+            transicao: "var(--cor-transicao)", // bloco de transição — neutro
+            flexivel: "var(--cor-flexivel)", // atividade flexível — verde, "pode crescer/mudar"
+            perigo: "var(--cor-perigo)",
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Fontes: uma para títulos (Space Grotesk), uma para texto (Inter) e
+       uma monoespaçada para os horários da grade — números alinhados em
+       colunas ficam muito mais legíveis numa mono. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="bg-base-bg text-texto-principal font-sans antialiased min-h-screen">
+  <!-- ======================= CABEÇALHO ======================= -->
+  <header class="border-b border-base-border bg-base-bg/95 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-livre font-display text-lg leading-none">◐</span>
+        <h1 class="font-display font-semibold text-base sm:text-lg tracking-tight">Organizador de Tempo</h1>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          id="btn-assistente-topo"
+          class="hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-base-border text-texto-muted hover:text-texto-principal hover:border-livre/50 transition-colors"
+          title="Abrir assistente"
+        >
+          Assistente
+        </button>
+        <button
+          id="btn-alternar-tema"
+          class="w-9 h-9 flex items-center justify-center rounded-lg border border-base-border text-texto-muted hover:text-texto-principal transition-colors"
+          title="Alternar tema claro/escuro"
+        >
+          <span id="icone-tema">☀️</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================= LAYOUT PRINCIPAL ======================= -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-5 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
+    <!-- ----------- COLUNA PRINCIPAL: disponibilidade + calendário diário ----------- -->
+    <section class="space-y-4 min-w-0">
+      <!-- Navegação de data + resumo de disponibilidade (RF05) -->
+      <div class="bg-base-surface border border-base-border rounded-2xl p-4 sm:p-5">
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <button id="btn-dia-anterior" class="w-8 h-8 rounded-lg hover:bg-base-surface2 text-texto-muted hover:text-texto-principal transition-colors">‹</button>
+          <div class="text-center">
+            <p id="texto-data-selecionada" class="font-display font-semibold text-sm sm:text-base"></p>
+            <button id="btn-ir-para-hoje" class="text-xs text-texto-muted hover:text-livre transition-colors">Ir para hoje</button>
+          </div>
+          <button id="btn-dia-seguinte" class="w-8 h-8 rounded-lg hover:bg-base-surface2 text-texto-muted hover:text-texto-principal transition-colors">›</button>
+        </div>
+
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p class="text-texto-muted text-xs uppercase tracking-wide mb-1">Tempo disponível hoje</p>
+            <p class="font-display font-semibold text-3xl sm:text-4xl text-livre" id="texto-tempo-livre-total">—</p>
+          </div>
+          <div class="flex-1 min-w-[140px] max-w-xs">
+            <div class="h-2 rounded-full bg-base-surface2 overflow-hidden">
+              <div id="barra-ocupacao" class="h-full bg-fixo transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p class="text-xs text-texto-muted mt-1"><span id="texto-percentual-ocupado">0</span>% do dia já ocupado</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros (RF14) -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-texto-muted uppercase tracking-wide mr-1">Filtrar:</span>
+        <div id="filtros-categoria" class="flex items-center gap-2 flex-wrap"></div>
+        <button
+          id="btn-nova-atividade"
+          class="ml-auto text-sm px-3 py-1.5 rounded-lg bg-livre text-base-bg font-medium hover:opacity-90 transition-opacity"
+        >
+          + Nova atividade
+        </button>
+      </div>
+
+      <!-- Calendário diário: o coração visual do app -->
+      <div class="bg-base-surface border border-base-border rounded-2xl p-3 sm:p-4">
+        <div id="calendario-diario" class="relative" aria-label="Linha do tempo do dia selecionado"></div>
+      </div>
+    </section>
+
+    <!-- ----------- COLUNA LATERAL: cursos, listas e assistente ----------- -->
+    <aside class="space-y-4 min-w-0">
+      <!-- Categorias — 100% criadas/geridas pelo usuário (Seção 10, Requisito 1) -->
+      <div class="bg-base-surface border border-base-border rounded-2xl p-4">
+        <h2 class="font-display font-semibold text-sm mb-3">Categorias</h2>
+        <div id="lista-categorias" class="flex flex-wrap gap-2 mb-3"></div>
+        <form id="form-nova-categoria" class="flex items-center gap-2">
+          <input
+            id="input-nova-categoria"
+            type="text"
+            placeholder="Nome da categoria..."
+            class="flex-1 bg-base-surface2 border border-base-border rounded-lg px-3 py-1.5 text-sm placeholder:text-texto-muted focus:outline-none focus:border-livre/60"
+            autocomplete="off"
+          />
+          <button type="submit" class="text-xs shrink-0 px-3 py-1.5 rounded-lg bg-livre text-base-bg font-medium hover:opacity-90 transition-opacity">+ Adicionar</button>
+        </form>
+      </div>
+
+      <!-- Cursos e Metas Ativas (RF06-RF10, RF17, RF18) -->
+      <div class="bg-base-surface border border-base-border rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-display font-semibold text-sm">Cursos e Metas</h2>
+          <button id="btn-novo-curso" class="text-xs text-livre hover:underline">+ novo</button>
+        </div>
+        <div id="lista-cursos" class="space-y-3"></div>
+      </div>
+
+      <!-- Listas / Projetos & Pendências (RF15, RF16) -->
+      <div class="bg-base-surface border border-base-border rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-display font-semibold text-sm">Listas &amp; Pendências</h2>
+          <button id="btn-novo-item" class="text-xs text-livre hover:underline">+ novo</button>
+        </div>
+        <div id="lista-itens" class="space-y-2"></div>
+      </div>
+
+      <!-- Assistente em linguagem natural (RF19-RF23) -->
+      <div class="bg-base-surface border border-base-border rounded-2xl p-4" id="painel-assistente">
+        <h2 class="font-display font-semibold text-sm mb-3">Assistente</h2>
+        <div id="mensagens-assistente" class="space-y-2 max-h-56 overflow-y-auto mb-3 text-sm pr-1"></div>
+        <form id="form-assistente" class="flex items-center gap-2">
+          <input
+            id="input-assistente"
+            type="text"
+            placeholder='Ex: "adicione reunião amanhã às 15h"'
+            class="flex-1 bg-base-surface2 border border-base-border rounded-lg px-3 py-2 text-sm placeholder:text-texto-muted focus:outline-none focus:border-livre/60"
+            autocomplete="off"
+          />
+          <button type="submit" class="w-9 h-9 shrink-0 rounded-lg bg-livre text-base-bg font-medium hover:opacity-90 transition-opacity">→</button>
+        </form>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ======================= MODAL GENÉRICO ======================= -->
+  <!-- Um único overlay reutilizado pelos formulários de atividade, curso e
+       item de lista — o conteúdo interno (#modal-conteudo) é trocado pelo
+       JS conforme a ação do usuário. Evita repetir a mesma estrutura de
+       overlay três vezes. -->
+  <div id="modal-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+    <div id="modal-conteudo" class="bg-base-surface border border-base-border rounded-2xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto"></div>
+  </div>
+
+  <!-- ======================= TOASTS (feedback rápido) ======================= -->
+  <div id="area-toasts" class="fixed bottom-4 right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 items-center sm:items-end"></div>
+
+  <!-- Ponto de entrada da aplicação. type="module" habilita import/export
+       entre os arquivos — por isso este projeto PRECISA rodar num
+       servidor local (ver README.md); abrir direto no navegador via
+       "file://" bloqueia módulos ES6 por segurança do próprio navegador. -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

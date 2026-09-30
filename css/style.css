@@ -1,0 +1,130 @@
+/**
+ * style.css
+ * ---------------------------------------------------------------------------
+ * Quase todo o visual do app vem de classes utilitárias do Tailwind
+ * (definidas direto no HTML). Este arquivo só cobre o que o Tailwind não
+ * faz sozinho:
+ *   1) as variáveis de cor do tema (dark por padrão, com override "light");
+ *   2) a barra de rolagem customizada;
+ *   3) o layout da linha do tempo do calendário, que é posicionamento
+ *      absoluto calculado em JavaScript (ver Renderizador.js) — mais fácil
+ *      de expressar aqui do que em classes utilitárias soltas.
+ */
+
+/* ---------- 1) Tema: variáveis CSS ---------- */
+/* Tema ESCURO = padrão (Dark Mode por padrão, conforme pedido). */
+:root {
+  --cor-fundo: #14161a;
+  --cor-superficie: #1c1f26;
+  --cor-superficie-2: #23262e;
+  --cor-borda: #2a2e37;
+  --cor-texto: #e8e6e1;
+  --cor-texto-muted: #8b8d93;
+
+  --cor-livre: #e8a33d;       /* tempo disponível */
+  --cor-fixo: #5b7fa6;        /* compromisso fixo */
+  --cor-transicao: #6b6f7a;   /* bloco de transição */
+  --cor-flexivel: #7fa65b;    /* atividade flexível */
+  --cor-perigo: #c0605a;
+}
+
+/* Tema CLARO: ativado adicionando a classe "light" na tag <html>
+   (feito pelo botão de alternância — ver app.js). As cores de destaque
+   (livre/fixo/transicao/flexivel) ficam um pouco mais escuras aqui para
+   manter contraste legível sobre fundo claro. */
+html.light {
+  --cor-fundo: #f7f5f1;
+  --cor-superficie: #ffffff;
+  --cor-superficie-2: #f0eee9;
+  --cor-borda: #e2ddd3;
+  --cor-texto: #24221d;
+  --cor-texto-muted: #6b675e;
+
+  --cor-livre: #b9761f;
+  --cor-fixo: #3d5f80;
+  --cor-transicao: #6b6f7a;
+  --cor-flexivel: #557a3d;
+  --cor-perigo: #a84843;
+}
+
+/* Transição suave ao trocar de tema, só nas propriedades de cor. */
+body,
+body * {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* ---------- 2) Barra de rolagem customizada (discreta, combina com o tema) ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cor-borda) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--cor-borda);
+  border-radius: 999px;
+}
+
+/* ---------- 3) Linha do tempo do calendário diário ---------- */
+/* O container tem uma altura calculada via JS (1 minuto = N pixels) e cada
+   atividade/bloco livre é posicionado dentro dele com `top` e `height` em
+   pixels, também calculados em JS a partir do horário. Aqui só definimos a
+   aparência visual de cada tipo de bloco. */
+
+.linha-hora {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--cor-borda);
+  font-size: 0.65rem;
+  color: var(--cor-texto-muted);
+}
+
+.bloco-tempo {
+  position: absolute;
+  left: 3.25rem; /* espaço reservado para os rótulos de hora à esquerda */
+  right: 0.25rem;
+  border-radius: 0.65rem;
+  padding: 0.35rem 0.6rem;
+  overflow: hidden;
+  font-size: 0.75rem;
+  line-height: 1.15;
+  border: 1px solid transparent;
+}
+
+.bloco-tempo--fixo {
+  background-color: color-mix(in srgb, var(--cor-fixo) 22%, transparent);
+  border-color: color-mix(in srgb, var(--cor-fixo) 55%, transparent);
+  color: var(--cor-texto);
+}
+
+.bloco-tempo--transicao {
+  background-color: color-mix(in srgb, var(--cor-transicao) 18%, transparent);
+  border-color: color-mix(in srgb, var(--cor-transicao) 45%, transparent);
+  color: var(--cor-texto-muted);
+  font-style: italic;
+}
+
+.bloco-tempo--flexivel {
+  background-color: color-mix(in srgb, var(--cor-flexivel) 22%, transparent);
+  border-color: color-mix(in srgb, var(--cor-flexivel) 55%, transparent);
+  color: var(--cor-texto);
+}
+
+.bloco-tempo--livre {
+  background-color: color-mix(in srgb, var(--cor-livre) 12%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--cor-livre) 55%, transparent);
+  color: var(--cor-livre);
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+/* Bloco pequeno demais para caber o texto normal — só mostra a duração. */
+.bloco-tempo--compacto {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
+}
